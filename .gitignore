@@ -9,3 +9,7 @@ venv/
 .env
 .DS_Store
 *.wav
+node_modules/
+.expo/
+android/
+ios/

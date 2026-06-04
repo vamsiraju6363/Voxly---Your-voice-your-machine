@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Voxly",
+    "slug": "voxly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0d0d1a",
+    "splash": {
+      "backgroundColor": "#0d0d1a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.voxly.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Voxly needs mic access to hear your voice commands."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0d0d1a"
+      },
+      "package": "com.voxly.app",
+      "permissions": ["RECORD_AUDIO"]
+    }
+  }
+}

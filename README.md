@@ -1,145 +1,231 @@
-
 # 🎙️ Voxly — Your Voice, Your Machine
 
 <p align="center">
-  <a href="https://github.com/vamsiraju6363/Voxly---Your-voice-your-machine">
-    <img src="https://img.shields.io/badge/run%20on%20your%20machine-▶-blue?style=for-the-badge" alt="Run on your machine">
-  </a>
-  <br>
-  <sup>Fully local · 100% offline · No API keys · No telemetry</sup>
+  <sup>PC as server · Phone as client · 100% free · Cloudflare Tunnel</sup>
 </p>
 
-Voxly is a fully offline voice assistant that runs entirely on your machine
-with no cloud dependencies:
-
-- **Listens** via your microphone — records 5-second audio clips on launch
-- **Transcribes** speech to text using OpenAI Whisper (base model)
-- **Thinks** by sending the transcription to a local Ollama instance running
-  Mistral 7B, which returns a short conversational reply
-- **Speaks** the response back to you using Coqui TTS (tacotron2-DDC model)
-- **Loops** continuously — listen → transcribe → think → speak — until you say
-  *"goodbye"* or press Ctrl+C
-
-All three stages log to the console (`[STT]` / `[LLM]` / `[TTS]`) and each
-module (`stt.py`, `llm.py`, `tts.py`, `main.py`) runs independently for testing.
-No internet needed after the initial model downloads.
-
----
-
-## Architecture
+A voice assistant where your PC acts as the AI backend and your phone connects
+to it from anywhere over a free Cloudflare Tunnel.
 
 ```
-┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
-│  stt.py  │ ──▶ │  llm.py  │ ──▶ │  tts.py  │ ──▶ │ speakers │
-│  Whisper │     │  Ollama  │     │ CoquiTTS │     └──────────┘
-│  (base)  │     │ (mistral)│     │(tacotron)│
-└──────────┘     └──────────┘     └──────────┘
-      ▲                                  │
-      │         main.py loop             │
-      └──────── listen → think → speak ──┘
+┌─────────────────────┐          ┌──────────────────────────────┐
+│   Mobile (Expo)     │  HTTPS   │        Your PC (backend)      │
+│                     │ ───────▶ │                                │
+│  🎤 Press & hold   │  tunnel  │  Whisper → Ollama → Piper TTS │
+│  🔊 Auto-playback  │ ◀─────── │  FastAPI on port 8000          │
+└─────────────────────┘          └──────────────────────────────┘
 ```
 
 ---
 
-## Quick Start
+## How It Works
 
-### Prerequisites
+1. **You speak** — press and hold the mic button on your phone
+2. **Audio sent** via Cloudflare Tunnel to your PC
+3. **PC transcribes** with Whisper, **thinks** with Ollama/Mistral, and
+   **synthesizes speech** with Piper TTS
+4. **Phone auto-plays** the assistant's spoken reply and shows the text
 
-- **Python 3.10+**
-- **Ollama** ([install](https://ollama.com/download/mac))
-- **ffmpeg** `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Linux)
-
-### 1. Clone & install deps
-
-```bash
-git clone https://github.com/vamsiraju6363/Voxly---Your-voice-your-machine.git
-cd Voxly---Your-voice-your-machine
-
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 2. Start Ollama & pull the model (once)
-
-```bash
-# Terminal 1 — keep this running
-ollama serve
-
-# Terminal 2 — one-time model download (~4.4 GB)
-ollama pull mistral
-```
-
-### 3. Launch the assistant
-
-```bash
-python main.py
-```
-
-The first run downloads Whisper base (~140 MB) and Tacotron2-DDC (~500 MB).
-Subsequent launches are instant.
-
----
-
-## Usage
-
-| Action           | How                                |
-| ---------------- | ---------------------------------- |
-| Speak a command  | Wait for "Listening…" then talk    |
-| Exit gracefully  | Say **"goodbye"**                  |
-| Force quit       | Press **Ctrl+C**                   |
-
-The console shows each stage:
-
-```
-[STT] what is the capital of France
-[LLM] The capital of France is Paris.
-[TTS] Speaking...
-```
+Everything is free. No API keys. No cloud subscriptions.
 
 ---
 
 ## Project Structure
 
-| File               | Purpose                                         |
-| ------------------ | ----------------------------------------------- |
-| `main.py`          | Main loop: listen → transcribe → think → speak |
-| `stt.py`           | Whisper wrapper — record mic, return text       |
-| `llm.py`           | Ollama HTTP API wrapper with conversation memory|
-| `tts.py`           | Coqui TTS wrapper — synthesize text to speech   |
-| `requirements.txt` | Python dependencies (pinned minimum versions)   |
-
-Each module is **independently testable**:
-```bash
-python stt.py   # Record 5s & transcribe
-python llm.py   # Interactive text chat
-python tts.py   # Type text & hear it spoken
 ```
+voice-assistant/
+├── backend/
+│   ├── main.py           # FastAPI server — POST /chat endpoint
+│   ├── stt.py            # Whisper base model wrapper
+│   ├── llm.py            # Ollama client (per-session history)
+│   ├── tts.py            # Piper TTS wrapper (subprocess)
+│   ├── requirements.txt  # Python dependencies
+│   └── start.sh          # Starts Ollama + FastAPI + Cloudflare Tunnel
+├── mobile/
+│   ├── App.js            # React Native UI — mic button + chat history
+│   ├── api.js            # Sends audio to backend, receives WAV reply
+│   ├── config.js         # Backend URL (paste your tunnel URL here)
+│   ├── app.json          # Expo configuration
+│   └── package.json      # Expo + React Native dependencies
+└── README.md
+```
+
+---
+
+## Setup Instructions
+
+### Prerequisites
+
+Install these on your **PC**:
+
+| Tool              | Install                                                 |
+| ----------------- | ------------------------------------------------------- |
+| Python 3.10+      | https://python.org                                       |
+| Ollama            | https://ollama.com/download                              |
+| Piper TTS         | See [Piper install](#piper-tts-install) below            |
+| cloudflared       | `brew install cloudflared` (macOS) or [download](https://github.com/cloudflare/cloudflared/releases) |
+| ffmpeg            | `brew install ffmpeg` (macOS) / `apt install ffmpeg` (Linux) |
+| Node.js 18+       | https://nodejs.org (for the mobile app)                  |
+
+---
+
+### 1. Backend Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/vamsiraju6363/Voxly---Your-voice-your-machine.git
+cd Voxly---Your-voice-your-machine/backend
+
+# Create virtual environment & install deps
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# Pull the LLM model (one-time, ~4.4 GB)
+ollama pull mistral
+```
+
+#### Piper TTS Install
+
+```bash
+# macOS
+brew install piper
+
+# Linux (download binary + voice model)
+wget https://github.com/rhasspy/piper/releases/latest/download/piper_linux_x86_64.tar.gz
+tar -xzf piper_linux_x86_64.tar.gz
+sudo cp piper/piper /usr/local/bin/
+```
+
+Download the voice model:
+
+```bash
+mkdir -p ~/.local/share/piper
+curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx" \
+     -o ~/.local/share/piper/en_US-lessac-medium.onnx
+curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json" \
+     -o ~/.local/share/piper/en_US-lessac-medium.onnx.json
+```
+
+Test Piper:
+
+```bash
+echo "Hello world" | piper --model ~/.local/share/piper/en_US-lessac-medium.onnx --output_file test.wav
+```
+
+---
+
+### 2. Launch the Backend
+
+```bash
+# From the backend/ directory
+./start.sh
+```
+
+This starts three services in one terminal:
+1. **Ollama** (port 11434)
+2. **FastAPI** (port 8000)
+3. **Cloudflare Tunnel** (exposes port 8000 publicly)
+
+After a few seconds, the script prints a **public URL**:
+
+```
+╔══════════════════════════════════════════════╗
+║   PUBLIC URL:  https://xxxx.trycloudflare.com
+║   Set this in →  mobile/config.js
+╚══════════════════════════════════════════════╝
+```
+
+**Copy this URL.** Press `Ctrl+C` to stop all services.
+
+---
+
+### 3. Mobile App Setup
+
+```bash
+# From the root of the repo
+cd ../mobile
+npm install
+```
+
+#### Configure the backend URL
+
+Edit `mobile/config.js` and paste your Cloudflare Tunnel URL:
+
+```js
+export const API_URL = "https://xxxx.trycloudflare.com";
+```
+
+#### Run on your phone
+
+```bash
+npx expo start
+```
+
+This prints a QR code in the terminal. Scan it with:
+- **iOS**: Camera app → tap the QR code → open in Expo Go
+- **Android**: Expo Go app → Scan QR code
+
+> Install the **Expo Go** app from the App Store / Play Store first.
+
+---
+
+## Usage
+
+| Action           | How                                          |
+| ---------------- | -------------------------------------------- |
+| Speak a command  | Press & hold the mic button, release to send |
+| See transcript   | Your words appear as a chat bubble           |
+| Hear reply       | Auto-plays through phone speaker             |
+| Multi-turn       | Session is maintained until you restart      |
+
+---
+
+## API Reference
+
+### `POST /chat`
+
+| Parameter     | Type     | In     | Description                           |
+| ------------- | -------- | ------ | ------------------------------------- |
+| `audio`       | file     | body   | Audio recording (WAV, MP3, M4A, etc.) |
+| `session_id`  | string   | query  | Optional — reuse for conversation     |
+
+**Response:** `audio/wav` with custom headers:
+
+| Header           | Value                                  |
+| ---------------- | -------------------------------------- |
+| `X-Transcript`   | Transcribed text from your speech      |
+| `X-Reply`        | Assistant's text reply                 |
+| `X-Session-ID`   | UUID for continuing the conversation   |
 
 ---
 
 ## Configuration
 
-| What                  | Where                    | Default                          |
-| --------------------- | ------------------------ | -------------------------------- |
-| Whisper model size    | `stt.py` → `model_name`  | `"base"` (also: tiny, small, …) |
-| Recording duration    | `stt.py` → `duration`    | `5.0` seconds                    |
-| Ollama model          | `llm.py` → `model`       | `"mistral"`                      |
-| Ollama host           | `llm.py` → `host`        | `http://localhost:11434`         |
-| System prompt         | `llm.py` → `SYSTEM_PROMPT`| Terse voice-assistant style     |
-| TTS model             | `tts.py` → `model_name`  | `tts_models/en/ljspeech/tacotron2-DDC` |
+| Setting               | File / Where                    | Default                               |
+| --------------------- | ------------------------------- | ------------------------------------- |
+| Whisper model         | `backend/stt.py` → `load_model` | `"base"` (also: tiny, small, medium) |
+| Ollama model          | `backend/llm.py` → `MODEL_NAME` | `"mistral"`                           |
+| System prompt         | `backend/main.py` → `SYSTEM_PROMPT` | Concise voice assistant style     |
+| Piper voice model     | `backend/tts.py` → `PIPER_MODEL`| `en_US-lessac-medium`                 |
+| FastAPI port          | `backend/start.sh` — uvicorn    | `8000`                                |
+| Tunnel type           | `backend/start.sh` — cloudflared| Quick tunnel (trycloudflare.com)      |
+| Backend URL (mobile)  | `mobile/config.js`              | Paste from terminal output            |
 
 ---
 
 ## Troubleshooting
 
-| Symptom                                    | Fix                                       |
-| ------------------------------------------ | ----------------------------------------- |
-| `ModuleNotFoundError: sounddevice`         | `pip install -r requirements.txt`         |
-| `Could not connect to Ollama`              | Run `ollama serve` in another terminal    |
-| `FileNotFoundError: ffmpeg`                | `brew install ffmpeg` / `apt install ffmpeg` |
-| `PortAudioError` (no mic)                  | Check mic permissions in System Settings  |
-| Ollama error 500 (missing `llama-server`)  | See [Ollama docs](https://github.com/ollama/ollama#building-from-source) |
+| Symptom                                      | Fix                                                    |
+| -------------------------------------------- | ------------------------------------------------------ |
+| `Could not connect to Ollama`                | Run `ollama serve` in a terminal first                  |
+| `Piper TTS failed` / `FileNotFoundError`     | Install Piper + download voice model (see above)        |
+| `FileNotFoundError: ffmpeg`                  | `brew install ffmpeg` / `apt install ffmpeg`            |
+| `No speech detected`                         | Check mic permissions on your phone                     |
+| Cloudflare Tunnel URL not printed            | Make sure `cloudflared` is installed and on PATH        |
+| App can't connect                            | Verify `config.js` has the correct URL                  |
+| QR code not scanning                         | Make sure phone and PC are on different networks is OK  |
+| Expo Go crashes on audio playback            | Update `expo-av` to latest version                      |
 
 ---
 
