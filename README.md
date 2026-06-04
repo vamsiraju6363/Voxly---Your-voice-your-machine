@@ -9,9 +9,20 @@
   <sup>Fully local · 100% offline · No API keys · No telemetry</sup>
 </p>
 
-A fully local, 100% offline voice assistant built in Python. Listens to your
-mic, transcribes with Whisper, reasons with Ollama (Mistral 7B), and speaks
-back with Coqui TTS. No API keys, no cloud, no telemetry.
+Voxly is a fully offline voice assistant that runs entirely on your machine
+with no cloud dependencies:
+
+- **Listens** via your microphone — records 5-second audio clips on launch
+- **Transcribes** speech to text using OpenAI Whisper (base model)
+- **Thinks** by sending the transcription to a local Ollama instance running
+  Mistral 7B, which returns a short conversational reply
+- **Speaks** the response back to you using Coqui TTS (tacotron2-DDC model)
+- **Loops** continuously — listen → transcribe → think → speak — until you say
+  *"goodbye"* or press Ctrl+C
+
+All three stages log to the console (`[STT]` / `[LLM]` / `[TTS]`) and each
+module (`stt.py`, `llm.py`, `tts.py`, `main.py`) runs independently for testing.
+No internet needed after the initial model downloads.
 
 ---
 
