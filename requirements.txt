@@ -1,0 +1,7 @@
+openai-whisper>=20231117
+sounddevice>=0.5.1
+soundfile>=0.12.1
+requests>=2.31.0
+TTS>=0.22.0
+numpy>=1.26.0
+torch>=2.0.0
